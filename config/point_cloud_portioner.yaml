@@ -1,0 +1,5 @@
+point_cloud_portioner:
+  world_frame_id: /world
+  publish_rate: 30.0 # [Hz]
+  points_per_update: 500
+  play_in_loop: True

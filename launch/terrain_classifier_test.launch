@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="namespace" default="/vigir/terrain_classifier" />
+  <arg name="args" default="" />
+  <group ns="$(arg namespace)">
+    <node name="vigir_point_cloud_portioner" pkg="vigir_terrain_classifier" type="point_cloud_portioner_node" respawn="true" output="screen" />
+    <rosparam file="$(find vigir_terrain_classifier)/config/point_cloud_portioner.yaml" command="load" />
+
+    <include file="$(find vigir_terrain_classifier)/launch/terrain_classifier.launch">
+      <arg name="namespace" value="$(arg namespace)" />
+      <arg name="args" value="$(arg args)" />
+    </include>
+  </group>
+</launch>

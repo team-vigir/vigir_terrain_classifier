@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="namespace" default="/vigir/terrain_classifier" />
+  <group ns="$(arg namespace)">
+    <include file="$(find vigir_terrain_classifier)/launch/terrain_classifier.launch">
+      <arg name="namespace" value="$(arg namespace)" />
+      <arg name="args" value="-loadTestCloud" />
+    </include>
+  </group>
+</launch>

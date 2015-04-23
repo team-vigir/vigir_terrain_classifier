@@ -1,0 +1,77 @@
+### common parameters ##########################################################
+# Binary encoded: Possible options: 
+# FILTER_NONE                   = 0,
+# FILTER_PASS_THROUGH_BOX       = 1,
+# FILTER_PASS_THROUGH_ELLIPSE   = 2,
+# FILTER_STATISTICAL_OUTLIER    = 4,
+# FILTER_VOXEL_GRID             = 8,
+# FILTER_MLS_SMOOTH             = 16,
+# FILTER_ALL                    = 255
+filter_mask: 11
+
+threads: 0 # 0 = auto
+
+world_frame_id: /world
+publish_rate: 1.0 # [Hz]
+compute_update_skips: 1 # number of updates to be skipped before next computation
+
+aggregation_res: 0.02
+min_aggregation_size: 10000
+max_aggregation_size: 100000
+aggregation_rx: 4.0 # [m]
+aggregation_ry: 2.0 # [m]
+update_weight: 0.75 # lowpass filtering, should be (0.0, 1.0]
+
+normals_res: 0.05
+
+### filter parameters ##########################################################
+# params for pass through filter relative to ground level (feet height)
+pass_through:
+  field_name: z
+  min: -1.0
+  max:  1.0
+
+# params for voxel grid filter
+voxel_grid:
+  lx: 0.02
+  ly: 0.02
+  lz: 0.20
+
+# params for moving least squares smoother
+mls_smoother:
+  radius: 0.1
+
+# params for statistical outlier filter
+statistical_outlier:
+  radius: 0.01
+  k: 25
+
+### model parameters ###########################################################
+# params for normal estimator
+normal_estimator:
+  radius: 0.05
+
+# params for gradients estimator
+gradient_estimator:
+  thresh: 0.5
+
+# params for edge detector
+edge_detector:
+  radius: 0.05
+  max_std: 0.022
+  non_max_supp_radius: 0.05
+
+# params for grid map generator
+grid_map_generator:
+  resolution: 0.02
+  reconstruct: False
+
+# params for height map generation
+height_grid_map:
+  resolution: 0.025
+  min_expansion_size: 1.0
+  update_weight: 0.75
+
+# misc params
+misc:
+  low_res: 0.05

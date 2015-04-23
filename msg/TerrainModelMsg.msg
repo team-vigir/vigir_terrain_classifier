@@ -1,0 +1,7 @@
+std_msgs/Header header
+
+float32 resolution
+
+sensor_msgs/PointCloud2 points_with_normals
+nav_msgs/OccupancyGrid ground_level_map
+vigir_terrain_classifier/HeightGridMapMsg height_grid_map
