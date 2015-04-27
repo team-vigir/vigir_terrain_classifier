@@ -517,8 +517,8 @@ bool TerrainClassifier::generateGroundLevelGridmap()
   ground_level_grid_map.reset(new nav_msgs::OccupancyGrid());
 
   ground_level_grid_map->info.resolution = params.gg_res;
-  ground_level_grid_map->info.width = ceil((max_x-min_x) * 1/params.gg_res);
-  ground_level_grid_map->info.height = ceil((max_y-min_y) * 1/params.gg_res);
+  ground_level_grid_map->info.width = ceil((max_x-min_x) * 1/params.gg_res + 1);
+  ground_level_grid_map->info.height = ceil((max_y-min_y) * 1/params.gg_res + 1);
 
   ground_level_grid_map->info.origin.position.x = min_x;
   ground_level_grid_map->info.origin.position.y = min_y;

@@ -1,8 +1,11 @@
 #include <vigir_terrain_classifier/grid_map/grid_map.h>
 
+#include <algorithm>
+
 namespace vigir_terrain_classifier
 {
 GridMap::GridMap(const std::string& frame_id, double resolution, double min_expansion_size)
+  : min_expansion_size(min_expansion_size)
 {
   grid_map.reset(new nav_msgs::OccupancyGrid());
 
@@ -15,8 +18,10 @@ GridMap::GridMap(const std::string& frame_id, double resolution, double min_expa
   grid_map->info.origin.position.x = 0.0;
   grid_map->info.origin.position.y = 0.0;
   grid_map->info.origin.position.z = 0.0;
-
-  grid_map->data.clear();
+  grid_map->info.origin.orientation.x = 0.0;
+  grid_map->info.origin.orientation.y = 0.0;
+  grid_map->info.origin.orientation.z = 0.0;
+  grid_map->info.origin.orientation.w = 1.0;
 
   // expansion size should be a multiple of resolution to prevent shift of data
   this->min_expansion_size = pceil(min_expansion_size, resolution);
@@ -28,12 +33,12 @@ GridMap::GridMap(const nav_msgs::OccupancyGrid& map, double min_expansion_size)
 {
   grid_map.reset(new nav_msgs::OccupancyGrid());
 
-  // expansion size should be a multiple of resolution to prevent shift of data
-  this->min_expansion_size = pceil(min_expansion_size, grid_map->info.resolution);
-
   clear();
 
   fromMsg(map);
+
+  // expansion size should be a multiple of resolution to prevent shift of data
+  this->min_expansion_size = pceil(min_expansion_size, grid_map->info.resolution);
 }
 
 GridMap::~GridMap()
@@ -42,6 +47,15 @@ GridMap::~GridMap()
 
 void GridMap::clear()
 {
+  grid_map->info.width = 0;
+  grid_map->info.height = 0;
+  grid_map->info.origin.position.x = 0.0;
+  grid_map->info.origin.position.y = 0.0;
+  grid_map->info.origin.position.z = 0.0;
+  grid_map->info.origin.orientation.x = 0.0;
+  grid_map->info.origin.orientation.y = 0.0;
+  grid_map->info.origin.orientation.z = 0.0;
+  grid_map->info.origin.orientation.w = 1.0;
   grid_map->data.clear();
   grid_map->header.seq = 0;
 
@@ -51,6 +65,7 @@ void GridMap::clear()
 
 bool GridMap::empty() const
 {
+  assert((!grid_map->data.empty()) || ((grid_map->info.width == 0) && ((grid_map->info.height == 0))));
   return grid_map->data.empty();
 }
 
@@ -62,6 +77,14 @@ int8_t& GridMap::at(int idx)
 void GridMap::fromMsg(const nav_msgs::OccupancyGrid& map)
 {
   *grid_map = map;
+
+  // check to make sure it was successfully copied
+  assert((grid_map->info.width == map.info.width) &&
+         (grid_map->info.height == map.info.height) &&
+         (grid_map->data.size() == map.data.size()) &&
+         (map.info.width * map.info.height == map.data.size()) &&
+         (grid_map->info.width * grid_map->info.height == grid_map->data.size()));
+
   min.x = grid_map->info.origin.position.x;
   min.y = grid_map->info.origin.position.y;
   min.z = grid_map->info.origin.position.z;
@@ -111,59 +134,69 @@ void GridMap::resize(const geometry_msgs::Vector3& min, const geometry_msgs::Vec
     return;
 
   // init map
-  double res = grid_map->info.resolution;
   if (grid_map->data.empty())
   {
-    this->min.x = pfloor(min.x, res);
-    this->min.y = pfloor(min.y, res);
-    this->max.x = pceil(max.x, res);
-    this->max.y = pceil(max.y, res);
+    this->min.x = pfloor(min.x, grid_map->info.resolution);
+    this->min.y = pfloor(min.y, grid_map->info.resolution);
+    this->max.x = pceil(max.x, grid_map->info.resolution);
+    this->max.y = pceil(max.y, grid_map->info.resolution);
   }
   else // update boundary in x and y, ensure new width and height are multiple of resolution
   {
     if (this->min.x > min.x)
-      this->min.x -= std::max(pceil(this->min.x-min.x, res), min_expansion_size);
+      this->min.x -= std::max(pceil(this->min.x - min.x, grid_map->info.resolution), min_expansion_size);
     if (this->min.y > min.y)
-      this->min.y -= std::max(pceil(this->min.y-min.y, res), min_expansion_size);
+      this->min.y -= std::max(pceil(this->min.y - min.y, grid_map->info.resolution), min_expansion_size);
     if (this->max.x < max.x)
-      this->max.x += std::max(pceil(max.x-this->max.x, res), min_expansion_size);
+      this->max.x += std::max(pceil(max.x - this->max.x, grid_map->info.resolution), min_expansion_size);
     if (this->max.y < max.y)
-      this->max.y += std::max(pceil(max.y-this->max.y, res), min_expansion_size);
+      this->max.y += std::max(pceil(max.y - this->max.y, grid_map->info.resolution), min_expansion_size);
   }
 
-  // save pointer to old map (double buffering)
-  nav_msgs::OccupancyGrid::Ptr old_grid_map = grid_map;
-
-  // setting up new grid map
-  grid_map.reset(new nav_msgs::OccupancyGrid());
+  // create new map
+  nav_msgs::OccupancyGrid::Ptr new_grid_map = boost::make_shared<nav_msgs::OccupancyGrid>();
 
   // init header
-  grid_map->header = old_grid_map->header;
+  new_grid_map->header = grid_map->header;
 
   // init info
-  grid_map->info.resolution = old_grid_map->info.resolution;
+  new_grid_map->info.resolution = grid_map->info.resolution;
   // add +1 to size as we use round for mapping world to map
-  grid_map->info.width  = static_cast<unsigned int>(ceil((this->max.x-this->min.x) / res)) + 1;
-  grid_map->info.height = static_cast<unsigned int>(ceil((this->max.y-this->min.y) / res)) + 1;
-  grid_map->info.origin.position.x = this->min.x;
-  grid_map->info.origin.position.y = this->min.y;
-  grid_map->info.origin.position.z = old_grid_map->info.origin.position.z;
+  new_grid_map->info.width  = static_cast<unsigned int>(ceil((this->max.x - this->min.x) / grid_map->info.resolution)) + 1;
+  new_grid_map->info.height = static_cast<unsigned int>(ceil((this->max.y - this->min.y) / grid_map->info.resolution)) + 1;
+  new_grid_map->info.origin.position.x = this->min.x;
+  new_grid_map->info.origin.position.y = this->min.y;
+  new_grid_map->info.origin.position.z = grid_map->info.origin.position.z;
 
   // reorganize data
-  grid_map->data.resize(grid_map->info.width * grid_map->info.height, std::numeric_limits<int8_t>::min());
+  new_grid_map->data.resize(new_grid_map->info.width * new_grid_map->info.height, std::numeric_limits<int8_t>::min());
 
   int old_idx = 0;
   int new_idx = 0;
-  getGridMapIndex(*grid_map, old_grid_map->info.origin.position.x, old_grid_map->info.origin.position.y, new_idx);
+  getGridMapIndex(*new_grid_map, grid_map->info.origin.position.x, grid_map->info.origin.position.y, new_idx);
 
   // copy row-wise data
-  for (unsigned int row = 0; row < old_grid_map->info.height; row++)
-  {
-    memcpy(&(grid_map->data[new_idx]), &(old_grid_map->data[old_idx]), old_grid_map->info.width);
 
-    old_idx += old_grid_map->info.width;
-    new_idx += grid_map->info.width;
+  // check some stuff
+  if (!(grid_map->info.width * grid_map->info.height == grid_map->data.size())) // size consistency
+  {
+    ROS_ERROR("width = %u, height = %u, size = %lu", grid_map->info.width, grid_map->info.height, grid_map->data.size());
+    assert(false);
   }
+  assert(new_grid_map->info.width * new_grid_map->info.height == new_grid_map->data.size());
+  assert((new_grid_map->info.width >= grid_map->info.width) && (new_grid_map->info.height >= grid_map->info.height)); // new grid map should be larger
+
+  for (unsigned int row = 0; row < grid_map->info.height; row++)
+  {
+    std::copy(grid_map->data.begin() + old_idx,
+              grid_map->data.begin() + old_idx + grid_map->info.width,
+              new_grid_map->data.begin() + new_idx);
+
+    old_idx += grid_map->info.width;
+    new_idx += new_grid_map->info.width;
+  }
+
+  grid_map = new_grid_map;
 }
 
 bool GridMap::getGridMapCoords(const nav_msgs::OccupancyGrid& map, double x, double y, int& map_x, int& map_y)
