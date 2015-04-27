@@ -211,11 +211,13 @@ void TerrainClassifierNode::publishTerrainModel() const
   }
 
   // publish ground level grid map
-  if (ground_level_grid_map_pub.getNumSubscribers() > 0)
+  if ((ground_level_grid_map_pub.getNumSubscribers() > 0) && (terrain_classifier->getGroundLevelGridMap()))
+  {
     ground_level_grid_map_pub.publish(terrain_classifier->getGroundLevelGridMap());
+  }
 
   // publish mesh surface
-  if (mesh_surface_pub.getNumSubscribers() > 0)
+  if ((mesh_surface_pub.getNumSubscribers() > 0) && (terrain_classifier->getMeshSurface()))
   {
     pcl_msgs::PolygonMesh mesh_msg;
     pcl_conversions::fromPCL(*(terrain_classifier->getMeshSurface()), mesh_msg);
