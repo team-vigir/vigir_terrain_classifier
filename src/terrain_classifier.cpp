@@ -662,9 +662,9 @@ void TerrainClassifier::setDataOutdated()
 
 bool TerrainClassifier::determineCurrentPose(geometry_msgs::Pose& pose)
 {
-  pose.position.x = pose.position.y = pose.position.z = 0.0;
-  pose.orientation = tf::createQuaternionMsgFromYaw(-1.95536);
-  return true; /// TODO: TEST
+  // pose.position.x = pose.position.y = pose.position.z = 0.0;
+  // pose.orientation = tf::createQuaternionMsgFromYaw(-1.95536);
+  // return true; /// TODO: TEST
 
   // get current feet pose
   std_msgs::Header header;
