@@ -161,7 +161,6 @@ void GridMap::resize(const geometry_msgs::Vector3& min, const geometry_msgs::Vec
 
   // init info
   new_grid_map->info.resolution = grid_map->info.resolution;
-  // add +1 to size as we use round for mapping world to map
   new_grid_map->info.width  = static_cast<unsigned int>(ceil((this->max.x - this->min.x) / grid_map->info.resolution)) + 1;
   new_grid_map->info.height = static_cast<unsigned int>(ceil((this->max.y - this->min.y) / grid_map->info.resolution)) + 1;
   new_grid_map->info.origin.position.x = this->min.x;
@@ -188,9 +187,7 @@ void GridMap::resize(const geometry_msgs::Vector3& min, const geometry_msgs::Vec
 
   for (unsigned int row = 0; row < grid_map->info.height; row++)
   {
-    std::copy(grid_map->data.begin() + old_idx,
-              grid_map->data.begin() + old_idx + grid_map->info.width,
-              new_grid_map->data.begin() + new_idx);
+    memcpy(&(new_grid_map->data[new_idx]), &(grid_map->data[old_idx]), sizeof(int8_t) * grid_map->info.width);
 
     old_idx += grid_map->info.width;
     new_idx += new_grid_map->info.width;
