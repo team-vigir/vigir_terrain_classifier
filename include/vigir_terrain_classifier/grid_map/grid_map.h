@@ -41,6 +41,10 @@
 
 #include <vigir_terrain_classifier/pcl/octree_voxel_grid.h>
 
+#define GRID_MAP_EMPTY_VAL std::numeric_limits<int8_t>::min()
+#define GRID_MAP_MIN_VAL (std::numeric_limits<int8_t>::min()+1)
+#define GRID_MAP_VALUE_RANGE (std::numeric_limits<int8_t>::max()-std::numeric_limits<int8_t>::min())
+
 
 
 namespace vigir_terrain_classifier

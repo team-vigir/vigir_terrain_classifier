@@ -68,8 +68,8 @@ void HeightGridMap::resize(const geometry_msgs::Vector3& min, const geometry_msg
 
 double HeightGridMap::rescale(nav_msgs::OccupancyGrid& map, double old_min_z, double old_max_z, double new_min_z, double new_max_z)
 {
-  double old_height_scale = (old_max_z-old_min_z) / (std::numeric_limits<int8_t>::max()-std::numeric_limits<int8_t>::min()+1);
-  double new_inv_height_scale = (std::numeric_limits<int8_t>::max()-std::numeric_limits<int8_t>::min()+1) / (new_max_z-new_min_z);
+  double old_height_scale = (old_max_z-old_min_z) / (GRID_MAP_VALUE_RANGE);
+  double new_inv_height_scale = (GRID_MAP_VALUE_RANGE) / (new_max_z-new_min_z);
 
   for (nav_msgs::OccupancyGrid::_data_type::iterator itr = map.data.begin(); itr != map.data.end(); itr++)
   {
@@ -90,7 +90,7 @@ void HeightGridMap::rescale(double min_z, double max_z)
   if (height_scale != 0.0)
     height_scale = rescale(*grid_map, this->min.z, this->max.z, min_z, max_z);
   else
-    height_scale = (max_z-min_z) / static_cast<double>(std::numeric_limits<int8_t>::max()-std::numeric_limits<int8_t>::min()+1);
+    height_scale = (max_z-min_z) / static_cast<double>(GRID_MAP_VALUE_RANGE);
 
   inv_height_scale = 1.0/height_scale;
   this->min.z = min_z;
@@ -140,8 +140,13 @@ void HeightGridMap::updateHeight(double x, double y, double height)
   int idx = 0;
   if (getGridMapIndex(x, y, idx))
   {
-    int8_t h = heightToMap(height, min.z, inv_height_scale);
-    grid_map->data.at(idx) += update_weight*static_cast<double>(h-grid_map->data.at(idx));
+    int8_t new_h = heightToMap(height, min.z, inv_height_scale);
+
+    int8_t& h = grid_map->data.at(idx);
+    if (h == GRID_MAP_EMPTY_VAL)
+      h = new_h;
+    else
+      h += update_weight*static_cast<double>(new_h-h);
   }
 }
 
@@ -150,8 +155,13 @@ void HeightGridMap::updateHeight(int map_x, int map_y, double height)
   int idx = 0;
   if (getGridMapIndex(map_x, map_y, idx))
   {
-    int8_t h = heightToMap(height, min.z, inv_height_scale);
-    grid_map->data.at(idx) += update_weight*static_cast<double>(h-grid_map->data.at(idx));
+    int8_t new_h = heightToMap(height, min.z, inv_height_scale);
+
+    int8_t& h = grid_map->data.at(idx);
+    if (h == GRID_MAP_EMPTY_VAL)
+      h = new_h;
+    else
+      h += update_weight*static_cast<double>(new_h-h);
   }
 }
 
@@ -161,7 +171,7 @@ bool HeightGridMap::getHeight(double x, double y, double& height) const
   if (getGridMapIndex(x, y, idx))
   {
     const int8_t& h = grid_map->data.at(idx);
-    if (h != std::numeric_limits<int8_t>::max()-std::numeric_limits<int8_t>::min())
+    if (h != GRID_MAP_EMPTY_VAL)
     {
       height = heightToWorld(h, min.z, height_scale);
       return true;
@@ -177,7 +187,7 @@ bool HeightGridMap::getHeight(int map_x, int map_y, double& height) const
   if (getGridMapIndex(map_x, map_y, idx))
   {
     const int8_t& h = grid_map->data.at(idx);
-    if (h != std::numeric_limits<int8_t>::max()-std::numeric_limits<int8_t>::min())
+    if (h != GRID_MAP_EMPTY_VAL)
     {
       height = heightToWorld(h, min.z, height_scale);
       return true;

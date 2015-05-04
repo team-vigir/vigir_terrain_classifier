@@ -192,7 +192,7 @@ nav_msgs::OccupancyGrid::Ptr TerrainClassifier::getHeightGridMapRescaled(int8_t 
   for (nav_msgs::OccupancyGrid::_data_type::iterator itr = map->data.begin(); itr != map->data.end(); itr++)
   {
     int8_t& val = *itr;
-    if (val == std::numeric_limits<int8_t>::min())
+    if (val == GRID_MAP_EMPTY_VAL)
     {
       val = min_val;
       continue;
@@ -662,9 +662,9 @@ void TerrainClassifier::setDataOutdated()
 
 bool TerrainClassifier::determineCurrentPose(geometry_msgs::Pose& pose)
 {
-  // pose.position.x = pose.position.y = pose.position.z = 0.0;
-  // pose.orientation = tf::createQuaternionMsgFromYaw(-1.95536);
-  // return true; /// TODO: TEST
+  //pose.position.x = 0.0; pose.position.y = 0.0; pose.position.z = 0.0;
+  //pose.orientation = tf::createQuaternionMsgFromYaw(-1.95536);
+  //return true; /// TODO: TEST
 
   // get current feet pose
   std_msgs::Header header;

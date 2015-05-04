@@ -59,9 +59,9 @@ public:
   void rescale(double min_z, double max_z);
 
   static int8_t heightToMap(double height, double min_z, double max_z, int8_t min_val, int8_t max_val);
-  static int8_t heightToMap(double height, double min_z, double inv_height_scale, int8_t min_val = std::numeric_limits<int8_t>::min()+1);
+  static int8_t heightToMap(double height, double min_z, double inv_height_scale, int8_t min_val = GRID_MAP_MIN_VAL);
   static double heightToWorld(int8_t height, double min_z, double max_z, int8_t min_val, int8_t max_val);
-  static double heightToWorld(int8_t height, double min_z, double height_scale, int8_t min_val = std::numeric_limits<int8_t>::min()+1);
+  static double heightToWorld(int8_t height, double min_z, double height_scale, int8_t min_val = GRID_MAP_MIN_VAL);
 
   void setHeight(double x, double y, double height);
   void setHeight(int map_x, int map_y, double height);

@@ -159,7 +159,7 @@ void GridMap::resize(const geometry_msgs::Vector3& min, const geometry_msgs::Vec
   new_grid_map->info.origin.position.z = grid_map->info.origin.position.z;
 
   // reorganize data
-  new_grid_map->data.resize(new_grid_map->info.width * new_grid_map->info.height, std::numeric_limits<int8_t>::min());
+  new_grid_map->data.resize(new_grid_map->info.width * new_grid_map->info.height, GRID_MAP_EMPTY_VAL);
 
   int old_idx = 0;
   int new_idx = 0;
