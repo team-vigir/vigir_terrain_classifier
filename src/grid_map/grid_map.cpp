@@ -1,7 +1,5 @@
 #include <vigir_terrain_classifier/grid_map/grid_map.h>
 
-#include <algorithm>
-
 namespace vigir_terrain_classifier
 {
 GridMap::GridMap(const std::string& frame_id, double resolution, double min_expansion_size)
@@ -13,18 +11,9 @@ GridMap::GridMap(const std::string& frame_id, double resolution, double min_expa
   grid_map->header.seq = 0;
 
   grid_map->info.resolution = resolution;
-  grid_map->info.width  = 0;
-  grid_map->info.height = 0;
-  grid_map->info.origin.position.x = 0.0;
-  grid_map->info.origin.position.y = 0.0;
-  grid_map->info.origin.position.z = 0.0;
-  grid_map->info.origin.orientation.x = 0.0;
-  grid_map->info.origin.orientation.y = 0.0;
-  grid_map->info.origin.orientation.z = 0.0;
-  grid_map->info.origin.orientation.w = 1.0;
 
   // expansion size should be a multiple of resolution to prevent shift of data
-  this->min_expansion_size = pceil(min_expansion_size, resolution);
+  this->min_expansion_size = vigir_footstep_planning::pceil(min_expansion_size, resolution);
 
   clear();
 }
@@ -38,7 +27,7 @@ GridMap::GridMap(const nav_msgs::OccupancyGrid& map, double min_expansion_size)
   fromMsg(map);
 
   // expansion size should be a multiple of resolution to prevent shift of data
-  this->min_expansion_size = pceil(min_expansion_size, grid_map->info.resolution);
+  this->min_expansion_size = vigir_footstep_planning::pceil(min_expansion_size, grid_map->info.resolution);
 }
 
 GridMap::~GridMap()
@@ -129,6 +118,8 @@ void GridMap::resize(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& cloud)
 
 void GridMap::resize(const geometry_msgs::Vector3& min, const geometry_msgs::Vector3& max)
 {
+  using namespace vigir_footstep_planning;
+
   // check if resize is needed (enlargement only)
   if (min.x >= this->min.x && min.y >= this->min.y && max.x <= this->max.x && max.y <= this->max.y)
     return;
@@ -291,7 +282,7 @@ bool GridMap::getGridMapWorldCoords(const nav_msgs::OccupancyGrid& map, int idx,
 void GridMap::getPointCloudBoundary(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& cloud, geometry_msgs::Vector3& min, geometry_msgs::Vector3& max) const
 {
   min.x = min.y = min.z = std::numeric_limits<geometry_msgs::Vector3::_x_type>::max();
-  max.x = max.y = max.z = std::numeric_limits<geometry_msgs::Vector3::_x_type>::min();
+  max.x = max.y = max.z = -std::numeric_limits<geometry_msgs::Vector3::_x_type>::max();
 
   for (pcl::PointCloud<pcl::PointXYZ>::const_iterator itr = cloud->begin(); itr != cloud->end(); itr++)
   {

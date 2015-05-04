@@ -37,6 +37,7 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <vigir_footstep_planning_lib/helper.h>
+#include <vigir_footstep_planning_lib/math.h>
 
 #include <vigir_terrain_classifier/pcl/octree_voxel_grid.h>
 
@@ -86,10 +87,6 @@ public:
 
   static bool getGridMapWorldCoords(const nav_msgs::OccupancyGrid& map, int idx, double& x, double& y);
   inline bool getGridMapWorldCoords(int idx, double& x, double& y) const {return getGridMapWorldCoords(*grid_map, idx, x, y); }
-
-  static inline double pround(double x, double prec) { return ::round(x/prec)*prec; }
-  static inline double pceil(double x, double prec) { return ::ceil(x/prec)*prec; }
-  static inline double pfloor(double x, double prec) { return ::floor(x/prec)*prec; }
 
   // typedefs
   typedef boost::shared_ptr<GridMap> Ptr;
