@@ -1,13 +1,20 @@
 #include <vigir_terrain_classifier/terrain_classifier_node.h>
 
-#include <pcl/filters/crop_box.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+#include <vigir_footstep_planning_lib/helper.h>
+#include <vigir_footstep_planning_lib/math.h>
+
+#include <vigir_terrain_classifier/pcl/point_cloud_filter.h>
+
+
 
 namespace vigir_terrain_classifier
 {
-TerrainClassifierNode::TerrainClassifierNode()
+TerrainClassifierNode::TerrainClassifierNode(ros::NodeHandle& nh)
+  : terrain_classifier(nh)
 {
-  ros::NodeHandle nh;
-
   double publish_rate;
 
   // load parameters
@@ -16,11 +23,9 @@ TerrainClassifierNode::TerrainClassifierNode()
   nh.param("compute_update_skips", (int&) compute_update_skips, 0);
   compute_update_skips_counter = compute_update_skips; // allows to do first compution without waiting
 
-  // init terrain classifier
-  TerrainClassifierParams params(nh);
-  terrain_classifier.reset(new TerrainClassifier(nh, params));
-
   // subscribe topics
+  reset_terrain_model_sub = nh.subscribe<std_msgs::Empty>("reset", 1, &TerrainClassifierNode::reset, this);
+  sys_command_sub = nh.subscribe("/syscommand", 1, &TerrainClassifierNode::sysCommandCallback, this);
   set_point_cloud_sub = nh.subscribe("set_point_cloud", 1, &TerrainClassifierNode::setPointCloud, this);
   point_cloud_update_sub = nh.subscribe("point_cloud_update", 1, &TerrainClassifierNode::insertPointCloud, this);
 
@@ -75,7 +80,7 @@ void TerrainClassifierNode::loadTestPointCloud()
 
   sensor_msgs::PointCloud2 point_cloud_msg;
   pcl::toROSMsg(*point_cloud, point_cloud_msg);
-  point_cloud_msg.header.frame_id = terrain_classifier->getFrameId();
+  point_cloud_msg.header.frame_id = terrain_classifier.getFrameId();
   point_cloud_msg.header.stamp = ros::Time::now();
 
   ROS_INFO("Generating terrain model...");
@@ -89,13 +94,24 @@ bool TerrainClassifierNode::terrainModelService(TerrainModelService::Request& /*
   if (!generateTerrainModel())
     return false;
 
-  terrain_classifier->getTerrainModel(resp.terrain_model);
+  terrain_classifier.getTerrainModel(resp.terrain_model);
   return true;
+}
+
+void TerrainClassifierNode::reset(const std_msgs::Empty::ConstPtr& /*empty*/)
+{
+  terrain_classifier.reset();
+}
+
+void TerrainClassifierNode::sysCommandCallback(const std_msgs::String::ConstPtr& command)
+{
+  if (command->data == "reset")
+    terrain_classifier.reset();
 }
 
 void TerrainClassifierNode::setPointCloud(const sensor_msgs::PointCloud2& point_cloud_msg)
 {
-  std::string world_frame_id = vigir_footstep_planning::strip_const(terrain_classifier->getFrameId(), '/');
+  std::string world_frame_id = vigir_footstep_planning::strip_const(terrain_classifier.getFrameId(), '/');
   std::string cloud_frame_id = vigir_footstep_planning::strip_const(point_cloud_msg.header.frame_id, '/');
   if (world_frame_id != cloud_frame_id)
   {
@@ -110,9 +126,9 @@ void TerrainClassifierNode::setPointCloud(const sensor_msgs::PointCloud2& point_
   filterVoxelGrid<pcl::PointXYZ>(point_cloud, 0.02, 0.02, 2.0);
 
   // filtering of input point cloud
-  terrain_classifier->filterPointCloudData(point_cloud);
+  terrain_classifier.filterPointCloudData(point_cloud);
 
-  terrain_classifier->setPointCloud(point_cloud);
+  terrain_classifier.setPointCloud(point_cloud);
   generateTerrainModel();
 
   publishDebugData();
@@ -124,7 +140,7 @@ void TerrainClassifierNode::setPointCloud(const sensor_msgs::PointCloud2& point_
 
 void TerrainClassifierNode::insertPointCloud(const sensor_msgs::PointCloud2& point_cloud_msg)
 {
-  std::string world_frame_id = vigir_footstep_planning::strip_const(terrain_classifier->getFrameId(), '/');
+  std::string world_frame_id = vigir_footstep_planning::strip_const(terrain_classifier.getFrameId(), '/');
   std::string cloud_frame_id = vigir_footstep_planning::strip_const(point_cloud_msg.header.frame_id, '/');
   if (world_frame_id != cloud_frame_id)
   {
@@ -139,18 +155,18 @@ void TerrainClassifierNode::insertPointCloud(const sensor_msgs::PointCloud2& poi
   pcl::fromROSMsg(point_cloud_msg, *point_cloud);
 
   // filtering of input point cloud
-  terrain_classifier->filterPointCloudData(point_cloud);
+  terrain_classifier.filterPointCloudData(point_cloud);
 
-  terrain_classifier->insertPointCloud(point_cloud);
+  terrain_classifier.insertPointCloud(point_cloud);
 
-  if (terrain_classifier->getInputCloud()->size() <= min_aggregation_size)
+  if (terrain_classifier.getInputCloud()->size() <= min_aggregation_size)
   {
     if (cloud_input_pub.getNumSubscribers() > 0)
     {
       sensor_msgs::PointCloud2 cloud_point_msg;
-      pcl::toROSMsg(*(terrain_classifier->getInputCloud()), cloud_point_msg);
+      pcl::toROSMsg(*(terrain_classifier.getInputCloud()), cloud_point_msg);
       cloud_point_msg.header.stamp = ros::Time::now();
-      cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+      cloud_point_msg.header.frame_id = terrain_classifier.getFrameId();
       cloud_input_pub.publish(cloud_point_msg);
     }
 
@@ -159,11 +175,11 @@ void TerrainClassifierNode::insertPointCloud(const sensor_msgs::PointCloud2& poi
 
   if (compute_update_skips_counter++ >= compute_update_skips)
   {
-    terrain_classifier->computeNormals(point_cloud);
+    terrain_classifier.computeNormals(point_cloud);
     compute_update_skips_counter = 0;
   }
 
-  terrain_classifier->generateHeightGridmap(point_cloud);
+  terrain_classifier.generateHeightGridmap(point_cloud);
 
   publishDebugData();
 
@@ -175,27 +191,27 @@ bool TerrainClassifierNode::generateTerrainModel()
 {
   // generate normals
   ROS_INFO("Generate normals...");
-  if (!terrain_classifier->computeNormals())
+  if (!terrain_classifier.computeNormals())
     return false;
 
   // generate gradients
   ROS_INFO("Generate gradients...");
-  if (!terrain_classifier->computeGradients())
+  if (!terrain_classifier.computeGradients())
     return false;
 
   // detect edges
   ROS_INFO("Detect edges...");
-  if (!terrain_classifier->detectEdges())
+  if (!terrain_classifier.detectEdges())
     return false;
 
   // generate height grid map
   ROS_INFO("Generate height grid map...");
-  if (!terrain_classifier->generateHeightGridmap())
+  if (!terrain_classifier.generateHeightGridmap())
     return false;
 
   // generate ground level grid map
   ROS_INFO("Generate ground level grid map...");
-  if (!terrain_classifier->generateGroundLevelGridmap())
+  if (!terrain_classifier.generateGroundLevelGridmap())
     return false;
 
   return true;
@@ -203,26 +219,26 @@ bool TerrainClassifierNode::generateTerrainModel()
 
 void TerrainClassifierNode::publishTerrainModel() const
 {
-  if (terrain_model_pub.getNumSubscribers() > 0 && terrain_classifier->hasTerrainModel())
+  if (terrain_model_pub.getNumSubscribers() > 0 && terrain_classifier.hasTerrainModel())
   {
     vigir_terrain_classifier::TerrainModelMsg model;
-    terrain_classifier->getTerrainModel(model);
+    terrain_classifier.getTerrainModel(model);
     terrain_model_pub.publish(model);
   }
 
   // publish ground level grid map
-  if ((ground_level_grid_map_pub.getNumSubscribers() > 0) && (terrain_classifier->getGroundLevelGridMap()))
+  if ((ground_level_grid_map_pub.getNumSubscribers() > 0) && (terrain_classifier.getGroundLevelGridMap()))
   {
-    ground_level_grid_map_pub.publish(terrain_classifier->getGroundLevelGridMap());
+    ground_level_grid_map_pub.publish(terrain_classifier.getGroundLevelGridMap());
   }
 
   // publish mesh surface
-  if ((mesh_surface_pub.getNumSubscribers() > 0) && (terrain_classifier->getMeshSurface()))
+  if ((mesh_surface_pub.getNumSubscribers() > 0) && (terrain_classifier.getMeshSurface()))
   {
     pcl_msgs::PolygonMesh mesh_msg;
-    pcl_conversions::fromPCL(*(terrain_classifier->getMeshSurface()), mesh_msg);
+    pcl_conversions::fromPCL(*(terrain_classifier.getMeshSurface()), mesh_msg);
     mesh_msg.header.stamp = ros::Time::now();
-    mesh_msg.header.frame_id = terrain_classifier->getFrameId();
+    mesh_msg.header.frame_id = terrain_classifier.getFrameId();
     mesh_surface_pub.publish(mesh_msg);
   }
 }
@@ -238,37 +254,37 @@ void TerrainClassifierNode::publishDebugData() const
 
   if (cloud_input_pub.getNumSubscribers() > 0)
   {
-    pcl::toROSMsg(*(terrain_classifier->getInputCloud()), cloud_point_msg);
+    pcl::toROSMsg(*(terrain_classifier.getInputCloud()), cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+    cloud_point_msg.header.frame_id = terrain_classifier.getFrameId();
     cloud_input_pub.publish(cloud_point_msg);
   }
 
   if (cloud_points_processed_pub.getNumSubscribers() > 0)
   {
-    pcl::toROSMsg(*(terrain_classifier->getCloudProcessed()), cloud_point_msg);
+    pcl::toROSMsg(*(terrain_classifier.getCloudProcessed()), cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+    cloud_point_msg.header.frame_id = terrain_classifier.getFrameId();
     cloud_points_processed_pub.publish(cloud_point_msg);
   }
 
   if (cloud_points_processed_low_res_pub.getNumSubscribers() > 0)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
-    terrain_classifier->getCloudProcessedLowRes(cloud);
+    terrain_classifier.getCloudProcessedLowRes(cloud);
     pcl::toROSMsg(*cloud, cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+    cloud_point_msg.header.frame_id = terrain_classifier.getFrameId();
     cloud_points_processed_low_res_pub.publish(cloud_point_msg);
   }
 
   if (cloud_normals_pub.getNumSubscribers() > 0)
   {
     // convert normals to PoseArray and publish them
-    const pcl::PointCloud<pcl::PointNormal>::ConstPtr cloud_points_with_normals = terrain_classifier->getPointsWithsNormals();
+    const pcl::PointCloud<pcl::PointNormal>::ConstPtr cloud_points_with_normals = terrain_classifier.getPointsWithsNormals();
 
     geometry_msgs::PoseArray pose_array;
-    pose_array.header.frame_id = terrain_classifier->getFrameId();
+    pose_array.header.frame_id = terrain_classifier.getFrameId();
     pose_array.header.stamp = ros::Time::now();
 
     geometry_msgs::Pose pose_msg;
@@ -298,15 +314,15 @@ void TerrainClassifierNode::publishDebugData() const
 
   if (cloud_gradients_pub.getNumSubscribers() > 0)
   {
-    pcl::toROSMsg(*(terrain_classifier->getGradients()), cloud_point_msg);
+    pcl::toROSMsg(*(terrain_classifier.getGradients()), cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
-    cloud_point_msg.header.frame_id = terrain_classifier->getFrameId();
+    cloud_point_msg.header.frame_id = terrain_classifier.getFrameId();
     cloud_gradients_pub.publish(cloud_point_msg);
   }
 
   // publish height grid map
   if (height_grid_map_pub.getNumSubscribers() > 0)
-    height_grid_map_pub.publish(terrain_classifier->getHeightGridMapRescaled());
+    height_grid_map_pub.publish(terrain_classifier.getHeightGridMapRescaled());
 }
 }
 
@@ -314,7 +330,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "vigir_terrain_classifier");
 
-  vigir_terrain_classifier::TerrainClassifierNode terrain_classifier_node;
+  ros::NodeHandle nh;
+  vigir_terrain_classifier::TerrainClassifierNode terrain_classifier_node(nh);
 
   for (int i = 1; i < argc; ++i)
   {

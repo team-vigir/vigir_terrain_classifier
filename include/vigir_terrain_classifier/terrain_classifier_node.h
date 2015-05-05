@@ -30,20 +30,15 @@
 #define VIGIR_TERRAIN_CLASSIFIER_NODE_H__
 
 #include <ros/ros.h>
-#include <tf/tf.h>
-
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
 
 #include <std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
+#include <std_msgs/String.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/PoseArray.h>
 #include <sensor_msgs/PointCloud2.h>
 
 #include <vigir_footstep_planning_msgs/footstep_planning_msgs.h>
-
-#include <vigir_footstep_planning_lib/helper.h>
-#include <vigir_footstep_planning_lib/math.h>
 
 #include <vigir_terrain_classifier/TerrainModelRequest.h>
 #include <vigir_terrain_classifier/TerrainModelService.h>
@@ -58,13 +53,17 @@ namespace vigir_terrain_classifier
 class TerrainClassifierNode
 {
 public:
-  TerrainClassifierNode();
+  TerrainClassifierNode(ros::NodeHandle& nh);
   virtual ~TerrainClassifierNode();
 
   void loadTestPointCloud();
 
 protected:
   bool terrainModelService(TerrainModelService::Request& req, TerrainModelService::Response& resp);
+
+  void reset(const std_msgs::Empty::ConstPtr& empty);
+
+  void sysCommandCallback(const std_msgs::String::ConstPtr& command);
 
   void setPointCloud(const sensor_msgs::PointCloud2& point_cloud_msg);
   void insertPointCloud(const sensor_msgs::PointCloud2& point_cloud_msg);
@@ -76,6 +75,8 @@ protected:
   void publishDebugData() const;
 
   // subscribers
+  ros::Subscriber reset_terrain_model_sub;
+  ros::Subscriber sys_command_sub;
   ros::Subscriber set_point_cloud_sub;
   ros::Subscriber point_cloud_update_sub;
   ros::Subscriber generate_terrain_model_sub;
@@ -99,7 +100,7 @@ protected:
 
   ros::Timer publish_timer;
 
-  TerrainClassifier::Ptr terrain_classifier;
+  TerrainClassifier terrain_classifier;
 
   // parameters
   unsigned int compute_update_skips; // number of updates not triggering( re)computation (but inserted to overall data)

@@ -31,33 +31,10 @@
 
 #include <ros/ros.h>
 
-#include <boost/thread/mutex.hpp>
-
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/point_cloud.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/features/normal_3d_omp.h>
-
-//#include <pcl/surface/mls_omp.h>
-#include <pcl/surface/mls.h>
-
-#include <pcl/surface/gp3.h>
-
-#include <pcl/surface/vtk_smoothing/vtk.h>
-#include <pcl/surface/vtk_smoothing/vtk_mesh_smoothing_laplacian.h>
-#include <pcl/surface/vtk_smoothing/vtk_utils.h>
-
 #include <nav_msgs/OccupancyGrid.h>
 
 #include <vigir_footstep_planning_msgs/footstep_planning_msgs.h>
 
-#include <vigir_footstep_planning_lib/helper.h>
-
-#include <vigir_terrain_classifier/pcl/octree_voxel_grid.h>
-#include <vigir_terrain_classifier/pcl/point_cloud_filter.h>
 #include <vigir_terrain_classifier/TerrainModelMsg.h>
 #include <vigir_terrain_classifier/terrain_model.h>
 
@@ -257,40 +234,6 @@ protected:
   // some helper
   bool determineCurrentPose(geometry_msgs::Pose& pose);
   double determineCurrentGroundHeight();
-
-//  template <typename PointT> void setupGridMap(const pcl::PointCloud<PointT>& cloud, nav_msgs::OccupancyGrid::Ptr& map, float res) const
-//  {
-//    double min_x, max_x;
-//    double min_y, max_y;
-//    double min_z, max_z;
-
-//    min_x = min_y = min_z = FLT_MAX;
-//    max_x = max_y = max_z = FLT_MIN;
-//    for (size_t i = 0; i < cloud->size(); i++)
-//    {
-//      const pcl::PointNormal& p = cloud->at(i);
-//      min_x = min(min_x, (double)p.x);
-//      min_y = min(min_y, (double)p.y);
-//      min_z = min(min_z, (double)p.z);
-//      max_x = max(max_x, (double)p.x);
-//      max_y = max(max_y, (double)p.y);
-//      max_z = max(max_z, (double)p.z);
-//    }
-
-//    // setting up grid map
-//    map.reset(new nav_msgs::OccupancyGrid());
-
-//    map->info.resolution = params.gg_res;
-//    map->info.width = ceil((max_x-min_x) * 1/res);
-//    map->info.height = ceil((max_y-min_y) * 1/res);
-
-//    map->info.origin.position.x = min_x;
-//    map->info.origin.position.y = min_y;
-//    map->info.origin.position.z = 0.0;
-
-//    map->data.clear();
-//    map->data.resize(map->info.width * map->info.height, -1);
-//  }
 
   // service clients
   ros::ServiceClient generate_feet_pose_client;

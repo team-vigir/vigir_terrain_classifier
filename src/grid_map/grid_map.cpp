@@ -5,7 +5,7 @@ namespace vigir_terrain_classifier
 GridMap::GridMap(const std::string& frame_id, double resolution, double min_expansion_size)
   : min_expansion_size(min_expansion_size)
 {
-  grid_map.reset(new nav_msgs::OccupancyGrid());
+  clear();
 
   grid_map->header.frame_id = vigir_footstep_planning::strip_const(frame_id, '/');
   grid_map->header.seq = 0;
@@ -14,14 +14,10 @@ GridMap::GridMap(const std::string& frame_id, double resolution, double min_expa
 
   // expansion size should be a multiple of resolution to prevent shift of data
   this->min_expansion_size = vigir_footstep_planning::pceil(min_expansion_size, resolution);
-
-  clear();
 }
 
 GridMap::GridMap(const nav_msgs::OccupancyGrid& map, double min_expansion_size)
 {
-  grid_map.reset(new nav_msgs::OccupancyGrid());
-
   clear();
 
   fromMsg(map);
@@ -36,17 +32,8 @@ GridMap::~GridMap()
 
 void GridMap::clear()
 {
-  grid_map->info.width = 0;
-  grid_map->info.height = 0;
-  grid_map->info.origin.position.x = 0.0;
-  grid_map->info.origin.position.y = 0.0;
-  grid_map->info.origin.position.z = 0.0;
-  grid_map->info.origin.orientation.x = 0.0;
-  grid_map->info.origin.orientation.y = 0.0;
-  grid_map->info.origin.orientation.z = 0.0;
+  grid_map = boost::make_shared<nav_msgs::OccupancyGrid>();
   grid_map->info.origin.orientation.w = 1.0;
-  grid_map->data.clear();
-  grid_map->header.seq = 0;
 
   min.x = min.y = min.z = std::numeric_limits<geometry_msgs::Vector3::_x_type>::max();
   max.x = max.y = max.z = std::numeric_limits<geometry_msgs::Vector3::_x_type>::min();

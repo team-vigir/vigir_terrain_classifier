@@ -1,5 +1,29 @@
 #include <vigir_terrain_classifier/terrain_classifier.h>
 
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/point_cloud.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d_omp.h>
+
+//#include <pcl/surface/mls_omp.h>
+#include <pcl/surface/mls.h>
+
+#include <pcl/surface/gp3.h>
+
+#include <pcl/surface/vtk_smoothing/vtk.h>
+#include <pcl/surface/vtk_smoothing/vtk_mesh_smoothing_laplacian.h>
+#include <pcl/surface/vtk_smoothing/vtk_utils.h>
+
+#include <vigir_terrain_classifier/pcl/octree_voxel_grid.h>
+#include <vigir_terrain_classifier/pcl/point_cloud_filter.h>
+
+#include <vigir_footstep_planning_lib/helper.h>
+
+
+
 namespace vigir_terrain_classifier
 {
 TerrainClassifier::TerrainClassifier(ros::NodeHandle& nh, const TerrainClassifierParams& params)
@@ -16,8 +40,6 @@ TerrainClassifier::TerrainClassifier(ros::NodeHandle& nh)
 
   // start service clients
   generate_feet_pose_client = nh.serviceClient<vigir_footstep_planning_msgs::GenerateFeetPoseService>("/vigir/footstep_planning/generate_feet_pose");
-
-  setDataOutdated();
 }
 
 TerrainClassifier::~TerrainClassifier()
