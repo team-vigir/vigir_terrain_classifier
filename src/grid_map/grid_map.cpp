@@ -201,10 +201,10 @@ bool GridMap::getGridMapCoords(const nav_msgs::OccupancyGrid& map, double x, dou
   if (map_x < 0 || map.info.width  <= static_cast<unsigned int>(map_x) ||
       map_y < 0 || map.info.height <= static_cast<unsigned int>(map_y))
   {
-    ROS_ERROR("getGridMapCoords(x,y) failed");
-    ROS_ERROR("Map Size: %d x %d", map.info.width, map.info.height);
-    ROS_ERROR("x: (%f - %f) / %f = %d", x, map.info.origin.position.x, map.info.resolution, map_x);
-    ROS_ERROR("y: (%f - %f) / %f = %d", y, map.info.origin.position.y, map.info.resolution, map_y);
+//    ROS_ERROR("getGridMapCoords(x,y) failed");
+//    ROS_ERROR("Map Size: %d x %d", map.info.width, map.info.height);
+//    ROS_ERROR("x: (%f - %f) / %f = %d", x, map.info.origin.position.x, map.info.resolution, map_x);
+//    ROS_ERROR("y: (%f - %f) / %f = %d", y, map.info.origin.position.y, map.info.resolution, map_y);
     return false;
   }
 
