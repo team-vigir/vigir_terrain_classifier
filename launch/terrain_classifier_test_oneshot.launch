@@ -2,10 +2,9 @@
 
 <launch>
   <arg name="namespace" default="/vigir/terrain_classifier" />
+
   <group ns="$(arg namespace)">
-    <include file="$(find vigir_terrain_classifier)/launch/terrain_classifier.launch">
-      <arg name="namespace" value="$(arg namespace)" />
-      <arg name="args" value="-loadTestCloud" />
-    </include>
+    <node name="vigir_terrain_classifier" pkg="vigir_terrain_classifier" type="terrain_classifier_node" args="-loadTestCloud" respawn="true" output="screen"/>
+    <rosparam file="$(find vigir_terrain_classifier)/config/terrain_classifier.yaml" command="load" />
   </group>
 </launch>
