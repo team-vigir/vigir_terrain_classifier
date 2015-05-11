@@ -110,30 +110,48 @@ bool TerrainModel::getPointWithNormal(const pcl::PointNormal& p_search, pcl::Poi
   std::vector<int> pointIdxNKNSearch;
   std::vector<float> pointNKNSquaredDistance;
 
-  if (points_with_normals_kdtree->nearestKSearch(p_search, 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+//  if (points_with_normals_kdtree->nearestKSearch(p_search, 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+//  {
+//    const pcl::PointCloud<pcl::PointNormal>::ConstPtr &cloud = points_with_normals_kdtree->getInputCloud();
+
+//    if (pointNKNSquaredDistance[0] > resolution*resolution*2.0)
+//      return false;
+
+//    p_result = p_search;
+//    p_result.normal_x = cloud->points[pointIdxNKNSearch[0]].normal_x;
+//    p_result.normal_y = cloud->points[pointIdxNKNSearch[0]].normal_y;
+//    p_result.normal_z = cloud->points[pointIdxNKNSearch[0]].normal_z;
+//    return true;
+//  }
+
+  double search_radius = resolution*3.0;
+  double search_radius_sq = search_radius*search_radius;
+  if (points_with_normals_kdtree->radiusSearch(p_search, search_radius, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
   {
-    const pcl::PointCloud<pcl::PointNormal>::ConstPtr &cloud = points_with_normals_kdtree->getInputCloud();
+    // estimate weighted mean normal
+    const pcl::PointCloud<pcl::PointNormal>::ConstPtr& cloud = points_with_normals_kdtree->getInputCloud();
 
-//    for (size_t i = 0; i < pointIdxNKNSearch.size(); i++)
-//    {
-//      double x = (p_search.x-cloud->points[pointIdxNKNSearch[i]].x);
-//      double y = (p_search.y-cloud->points[pointIdxNKNSearch[i]].y);
-//      double z = (p_search.z-cloud->points[pointIdxNKNSearch[i]].z);
+    double normal_x = 0.0;
+    double normal_y = 0.0;
+    double normal_z = 0.0;
 
-//      ROS_INFO("%f %f %f - %f %f %f - sq_dist: %f - %f",
-//               p_search.x, p_search.y, p_search.z,
-//               cloud->points[pointIdxNKNSearch[i]].x, cloud->points[pointIdxNKNSearch[i]].y, cloud->points[pointIdxNKNSearch[i]].z,
-//               pointNKNSquaredDistance[i],
-//               x*x+y*y+z*z);
-//    }
+    double total_weights = 0.0;
 
-    if (pointNKNSquaredDistance[0] > resolution*resolution*2.0)
-      return false;
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); i++)
+    {
+      double weight = search_radius_sq - pointNKNSquaredDistance[i];
+      total_weights += weight;
+
+      normal_x += cloud->points[pointIdxNKNSearch[i]].normal_x * weight;
+      normal_y += cloud->points[pointIdxNKNSearch[i]].normal_y * weight;
+      normal_z += cloud->points[pointIdxNKNSearch[i]].normal_z * weight;
+    }
 
     p_result = p_search;
-    p_result.normal_x = cloud->points[pointIdxNKNSearch[0]].normal_x;
-    p_result.normal_y = cloud->points[pointIdxNKNSearch[0]].normal_y;
-    p_result.normal_z = cloud->points[pointIdxNKNSearch[0]].normal_z;
+    p_result.normal_x = normal_x / total_weights;
+    p_result.normal_y = normal_y / total_weights;
+    p_result.normal_z = normal_z / total_weights;
+
     return true;
   }
 
