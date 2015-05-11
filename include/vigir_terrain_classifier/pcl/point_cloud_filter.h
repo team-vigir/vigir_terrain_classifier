@@ -78,7 +78,7 @@ template <typename PointT> void filterPassThroughEllipse(typename pcl::PointClou
     double a = (cos_o*dx + sin_o*dy)/rx;
     a = a*a;
 
-    double b = (sin_o*dx + cos_o*dy)/ry;
+    double b = (sin_o*dx - cos_o*dy)/ry;
     b = b*b;
 
     if (a+b > 1)

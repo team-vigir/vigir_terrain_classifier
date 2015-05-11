@@ -706,7 +706,7 @@ bool TerrainClassifier::determineCurrentPose(geometry_msgs::Pose& pose)
   }
   else
   {
-    ROS_WARN("determineCurrentPosition: No state estimation of feet available. Defaulting to origin!");
+    ROS_WARN_THROTTLE(10.0, "determineCurrentPosition: No state estimation of feet available. Defaulting to origin!");
     pose = geometry_msgs::Pose();
     pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
     return false;
