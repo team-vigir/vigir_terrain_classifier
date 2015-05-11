@@ -150,11 +150,13 @@ bool TerrainModel::getHeight(double x, double y, double& height) const
 
 bool TerrainModel::update3DData(geometry_msgs::Pose& p) const
 {
+  bool result = true;
+
   // get z
   if (!getHeight(p.position.x, p.position.y, p.position.z))
   {
     //ROS_WARN_THROTTLE(1.0, "No height data found at %f/%f", p.position.x, p.position.y);
-    return false;
+    result = false;
   }
 
   // get roll and pitch
@@ -164,14 +166,18 @@ bool TerrainModel::update3DData(geometry_msgs::Pose& p) const
   if (!getPointWithNormal(p_n, p_n))
   {
     //ROS_WARN_THROTTLE(1.0, "No normal data found at %f/%f", p.position.x, p.position.y);
-    return false;
+    result = false;
   }
-  geometry_msgs::Vector3 n;
-  n.x = p_n.normal_x;
-  n.y = p_n.normal_y;
-  n.z = p_n.normal_z;
+  else
+  {
+    geometry_msgs::Vector3 n;
+    n.x = p_n.normal_x;
+    n.y = p_n.normal_y;
+    n.z = p_n.normal_z;
 
-  vigir_footstep_planning::normalToQuaternion(n, tf::getYaw(p.orientation), p.orientation);
-  return true;
+    vigir_footstep_planning::normalToQuaternion(n, tf::getYaw(p.orientation), p.orientation);
+  }
+
+  return result;
 }
 }
