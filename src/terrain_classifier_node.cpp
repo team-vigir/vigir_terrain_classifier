@@ -312,7 +312,7 @@ void TerrainClassifierNode::publishDebugData() const
     cloud_normals_pub.publish(pose_array);
   }
 
-  if (cloud_gradients_pub.getNumSubscribers() > 0)
+  if ((cloud_gradients_pub.getNumSubscribers() > 0) && (terrain_classifier.getGradients()))
   {
     pcl::toROSMsg(*(terrain_classifier.getGradients()), cloud_point_msg);
     cloud_point_msg.header.stamp = ros::Time::now();
