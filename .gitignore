@@ -10,3 +10,5 @@ pointclouds
 *.backup
 *.user
 *.autosave
+*.orig
+*.rej
