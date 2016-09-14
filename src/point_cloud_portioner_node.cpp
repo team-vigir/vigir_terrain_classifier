@@ -16,22 +16,13 @@ PointCloudPortionerNode::PointCloudPortionerNode()
   // publish topics
   point_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud_update", 1);
 
-  std::string path = "/home/alex/vigir/catkin_ws/src/vigir_footstep_planning/vigir_terrain_classifier/pointclouds/";
+  if (!nh.hasParam("pcl_file"))
+  {
+    ROS_ERROR("No PCL file given. Please start node with argument 'pcl_file:=<path to file>'");
+    exit(0);
+  }
 
-  //path += "things_on_ground_1_09_25.pcd";
-  //path += "things_on_ground_2_09_25.pcd";
-  //path += "things_on_ground_3.pcd";
-  //path += "things_on_ground_4.pcd";
-  //path += "things_on_ground_5.pcd";
-  //path += "traps_ground.pcd";
-  //path += "ramp.pcd";
-  path += "ramp2.pcd";
-  //path += "rough_terrain_2_4.pcd";
-  //path += "rough_terrain_2_on_top.pcd";
-  //path += "zick_zack.pcd";
-  //path += "new.pcd";
-
-  loadPointCloud(path);
+  loadPointCloud(nh.param("pcl_file", std::string()));
 
   publish_timer = nh.createTimer(ros::Duration(1.0/publish_rate), &PointCloudPortionerNode::update, this);
 }
@@ -50,9 +41,14 @@ void PointCloudPortionerNode::loadPointCloud(const std::string& path)
 //  params.gg_res = 0.02;
 //  terrain_classifier->setParams(params);
 
-  ROS_INFO("Load point cloud from %s...", path.c_str());
-  pcl::io::loadPCDFile(path, point_cloud);
-  ROS_INFO("Done!");
+  ROS_INFO("Loading point cloud from %s...", path.c_str());
+  if (pcl::io::loadPCDFile(path, point_cloud))
+  {
+    ROS_ERROR("FAILED!");
+    exit(0);
+  }
+  else
+    ROS_INFO("Done!");
 
   current_point_index = 0;
 }

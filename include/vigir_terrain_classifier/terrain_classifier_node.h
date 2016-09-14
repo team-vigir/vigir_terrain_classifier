@@ -56,7 +56,7 @@ public:
   TerrainClassifierNode(ros::NodeHandle& nh);
   virtual ~TerrainClassifierNode();
 
-  void loadTestPointCloud();
+  void loadTestPointCloud(const std::string& path);
 
 protected:
   bool terrainModelService(TerrainModelService::Request& req, TerrainModelService::Response& resp);

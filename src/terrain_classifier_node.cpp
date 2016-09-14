@@ -53,30 +53,18 @@ TerrainClassifierNode::~TerrainClassifierNode()
 {
 }
 
-void TerrainClassifierNode::loadTestPointCloud()
+void TerrainClassifierNode::loadTestPointCloud(const std::string& path)
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZ>());
 
-  std::string path = "/home/alex/vigir/catkin_ws/src/vigir_footstep_planning/vigir_terrain_classifier/pointclouds/";
-
-  //path += "things_on_ground_1_09_25.pcd";
-  //path += "things_on_ground_2_09_25.pcd";
-  //path += "things_on_ground_3.pcd";
-  //path += "things_on_ground_4.pcd";
-  //path += "things_on_ground_5.pcd";
-  //path += "traps_ground.pcd";
-  //path += "ramp.pcd";
-  path += "ramp2.pcd";
-  //path += "rough_terrain_2_4.pcd";
-  //path += "rough_terrain_2_on_top.pcd";
-  //path += "zick_zack.pcd";
-  //path += "new.pcd";
-  // add filtered point cloud to classifier
-
-
-  ROS_INFO("Load point cloud from %s...", path.c_str());
-  pcl::io::loadPCDFile(path, *point_cloud);
-  ROS_INFO("Done!");
+  ROS_INFO("Loading point cloud from %s...", path.c_str());
+  if (pcl::io::loadPCDFile(path, *point_cloud))
+  {
+    ROS_ERROR("FAILED!");
+    return;
+  }
+  else
+    ROS_INFO("Done!");;
 
   sensor_msgs::PointCloud2 point_cloud_msg;
   pcl::toROSMsg(*point_cloud, point_cloud_msg);
@@ -336,7 +324,7 @@ int main(int argc, char** argv)
   for (int i = 1; i < argc; ++i)
   {
     if (std::string(argv[i]) == "-loadTestCloud")
-      terrain_classifier_node.loadTestPointCloud();
+      terrain_classifier_node.loadTestPointCloud(nh.param("pcl_file", std::string()));
   }
 
   ros::spin();
