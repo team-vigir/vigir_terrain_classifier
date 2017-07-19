@@ -179,7 +179,7 @@ bool GridMap::getGridMapCoords(const nav_msgs::OccupancyGrid& map, double x, dou
   map_x = round((x-map.info.origin.position.x) / map.info.resolution);
   map_y = round((y-map.info.origin.position.y) / map.info.resolution);
 
-  #warning ADDED a hack to deal with out of bounds from higher level systems.
+  # warning ADDED a hack to deal with out of bounds from higher level systems.
   if (map_x == -1)
   {
     map_x = 0;

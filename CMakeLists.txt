@@ -144,7 +144,7 @@ add_executable(terrain_classifier_test src/terrain_classifier_test.cpp)
 add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(point_cloud_portioner_node ${PROJECT_NAME})
 target_link_libraries(terrain_classifier_node ${PROJECT_NAME})
 target_link_libraries(terrain_classifier_test ${PROJECT_NAME})
