@@ -82,24 +82,24 @@ void test_normals()
 
   int view_port_1(0);
   viewer.createViewPort(0.0, 0.5, 0.5, 1.0, view_port_1);
-  viewer.addCoordinateSystem(0.5, view_port_1);
+  viewer.addCoordinateSystem(0.5, "reference", view_port_1);
   viewer.addPointCloud<pcl::PointXYZ>(terrain_classifier->getInputCloud(), "input cloud", view_port_1);
 
   int view_port_2(0);
   viewer.createViewPort(0.5, 0.5, 1.0, 1.0, view_port_2);
-  viewer.addCoordinateSystem(0.5, view_port_2);
+  viewer.addCoordinateSystem(0.5, "reference", view_port_2);
   //viewer.addPointCloud<pcl::PointXYZ>(cloud_processed, "processed cloud", view_port_2);
   terrain_classifier->computeSurfaceMesh();
   viewer.addPolygonMesh(*(terrain_classifier->getMeshSurface()), "surface", view_port_2);
 
   int view_port_3(0);
   viewer.createViewPort(0.0, 0.0, 0.5, 0.5, view_port_3);
-  viewer.addCoordinateSystem(0.5, view_port_3);
+  viewer.addCoordinateSystem(0.5, "reference", view_port_3);
   vigir_terrain_classifier::showNormals(terrain_classifier, viewer, "normals", view_port_3);
 
   int view_port_4(0);
   viewer.createViewPort(0.5, 0.0, 1.0, 0.5, view_port_4);
-  viewer.addCoordinateSystem(0.5, view_port_4);
+  viewer.addCoordinateSystem(0.5, "reference", view_port_4);
   //terrain_classifier->showGradients(viewer, "gradients", view_port_4);
   vigir_terrain_classifier::showEdges(terrain_classifier, viewer, "edges", view_port_4);
 
